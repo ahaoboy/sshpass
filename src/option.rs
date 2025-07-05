@@ -15,6 +15,14 @@ pub enum ParseError {
     ConflictingArguments,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum PasswordError {
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Windows does not support file descriptors (fd)")]
+    NotSupportFd,
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum PwType {
     Stdin,
@@ -24,20 +32,47 @@ pub enum PwType {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Option {
+pub struct AppOption {
     pub pwtype: PwType,
     pub pwprompt: String,
     pub verbose: u32,
     pub cmd: String,
 }
 
-impl Option {
-    pub fn get_password(&self) -> String {
+fn read_first_line(file: std::fs::File) -> Result<String, PasswordError> {
+    let mut reader = std::io::BufReader::new(file);
+
+    let mut first_line = String::new();
+    std::io::BufRead::read_line(&mut reader, &mut first_line)?;
+
+    Ok(first_line.trim_end().to_string())
+}
+
+impl AppOption {
+    pub fn get_password(&self) -> Result<String, PasswordError> {
         match &self.pwtype {
-            PwType::Stdin => String::new(),
-            PwType::File(_) => String::new(),
-            PwType::Fd(_) => String::new(),
-            PwType::Pass(pwd) => pwd.to_owned(),
+            PwType::Stdin => {
+                let mut buf = String::new();
+                std::io::stdin().read_line(&mut buf)?;
+                Ok(buf)
+            }
+            PwType::File(path) => {
+                let file = std::fs::File::open(path)?;
+                read_first_line(file)
+            }
+            PwType::Fd(fd) => {
+                #[cfg(not(target_os = "windows"))]
+                {
+                    let file = unsafe { std::fs::File::from_raw_fd(fd) };
+                    read_first_line(file)
+                }
+                #[cfg(target_os = "windows")]
+                {
+                    let _ = fd;
+                    Err(PasswordError::NotSupportFd)
+                }
+            }
+            PwType::Pass(pwd) => Ok(pwd.to_owned()),
         }
     }
 }
@@ -59,8 +94,8 @@ At most one of -f, -d, -p or -e should be used"
     );
 }
 
-pub fn parse_options(argc: usize, argv: &[String]) -> Result<Option, ParseError> {
-    let mut args = Option {
+pub fn parse_options(argc: usize, argv: &[String]) -> Result<AppOption, ParseError> {
+    let mut args = AppOption {
         pwtype: PwType::Stdin,
         pwprompt: PASSWORD_PROMPT.to_string(),
         verbose: 0,
@@ -196,7 +231,7 @@ mod test {
         )] {
             let v: Vec<_> = argv.iter().map(|s| s.to_string()).collect();
             let opt = parse_options(argc, &v).unwrap();
-            let pwd = opt.get_password();
+            let pwd = opt.get_password().unwrap();
             assert_eq!(pwd, "root");
         }
     }

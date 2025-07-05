@@ -1,4 +1,4 @@
-use crate::Option;
+use crate::{AppOption, PasswordError};
 use expectrl::{check, spawn, stream::stdin::Stdin};
 use std::io::stdout;
 
@@ -8,11 +8,13 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error("Expectrl error: {0}")]
     Expectrl(#[from] expectrl::Error),
+    #[error("Expectrl error: {0}")]
+    Password(#[from] PasswordError),
 }
 
-pub fn sshpass(option: &Option) -> Result<(), Error> {
+pub fn sshpass(option: &AppOption) -> Result<(), Error> {
     let command = &option.cmd;
-    let password = option.get_password();
+    let password = option.get_password()?;
 
     let mut ssh = spawn(command).unwrap_or_else(|_| panic!("Unknown command: {command:?}"));
 
