@@ -1,5 +1,5 @@
-use std::{env, process};
 use sshpass::{Error, parse_options};
+use std::{env, process};
 
 fn main() -> Result<(), Error> {
     let argv: Vec<String> = env::args().collect();

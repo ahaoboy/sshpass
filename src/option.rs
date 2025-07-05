@@ -217,22 +217,38 @@ mod test {
 
     #[test]
     fn test() {
-        for (argc, argv) in [(
-            7,
-            vec![
-                "sshpass.exe",
-                "-p",
+        for (argc, argv, expect) in [
+            (
+                7,
+                vec![
+                    "sshpass.exe",
+                    "-p",
+                    "root",
+                    "ssh",
+                    "u0_a345@192.168.0.64",
+                    "-p",
+                    "8022",
+                ],
                 "root",
-                "ssh",
-                "u0_a345@192.168.0.64",
-                "-p",
-                "8022",
-            ],
-        )] {
+            ),
+            (
+                7,
+                vec![
+                    "sshpass.exe",
+                    "-f",
+                    "Cargo.toml",
+                    "ssh",
+                    "u0_a345@192.168.0.64",
+                    "-p",
+                    "8022",
+                ],
+                "[package]",
+            ),
+        ] {
             let v: Vec<_> = argv.iter().map(|s| s.to_string()).collect();
             let opt = parse_options(argc, &v).unwrap();
             let pwd = opt.get_password().unwrap();
-            assert_eq!(pwd, "root");
+            assert_eq!(pwd, expect);
         }
     }
 }
