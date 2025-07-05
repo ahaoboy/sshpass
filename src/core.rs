@@ -1,4 +1,4 @@
-use crate::{AppOption, PasswordError};
+use crate::{AppOption, ParseError, PasswordError};
 use expectrl::{check, spawn, stream::stdin::Stdin};
 use std::io::stdout;
 
@@ -6,6 +6,8 @@ use std::io::stdout;
 pub enum Error {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
+    #[error("Parse error: {0}")]
+    Parse(#[from] ParseError),
     #[error("Expectrl error: {0}")]
     Expectrl(#[from] expectrl::Error),
     #[error("Expectrl error: {0}")]
@@ -36,9 +38,7 @@ pub fn sshpass(option: &AppOption) -> Result<(), Error> {
 
     let mut stdin = Stdin::open()?;
     ssh.interact(&mut stdin, stdout())
-        .on_idle(|_| {
-            Ok(())
-        })
+        .on_idle(|_| Ok(()))
         .spawn()?;
 
     stdin.close()?;
