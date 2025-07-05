@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 # expectrl = { version = "0.6", features = ["async"] }
 expectrl = { version = "0.6" }
-thiserror = "1"
+thiserror = "2"
