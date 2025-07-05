@@ -175,3 +175,29 @@ Using \"{PASSWORD_PROMPT}\" as the default password prompt indicator."
     args.cmd = argv[optind..].join(" ");
     Ok(args)
 }
+
+#[cfg(test)]
+mod test {
+    use crate::parse_options;
+
+    #[test]
+    fn test() {
+        for (argc, argv) in [(
+            7,
+            vec![
+                "sshpass.exe",
+                "-p",
+                "root",
+                "ssh",
+                "u0_a345@192.168.0.64",
+                "-p",
+                "8022",
+            ],
+        )] {
+            let v: Vec<_> = argv.iter().map(|s| s.to_string()).collect();
+            let opt = parse_options(argc, &v).unwrap();
+            let pwd = opt.get_password();
+            assert_eq!(pwd, "root");
+        }
+    }
+}

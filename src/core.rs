@@ -34,15 +34,7 @@ pub fn sshpass(option: &Option) -> Result<(), Error> {
 
     let mut stdin = Stdin::open()?;
     ssh.interact(&mut stdin, stdout())
-        .on_idle(|_state| {
-            #[cfg(not(target_os = "windows"))]
-            {
-                let (rows, cols) = _term.size();
-                _state
-                    .session
-                    .set_window_size(cols, rows)
-                    .expect("Update window size failed");
-            }
+        .on_idle(|_| {
             Ok(())
         })
         .spawn()?;
