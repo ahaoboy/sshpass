@@ -64,7 +64,7 @@ impl AppOption {
                 #[cfg(not(target_os = "windows"))]
                 {
                     use std::os::unix::io::FromRawFd;
-                    let file = unsafe { std::fs::File::from_raw_fd(fd) };
+                    let file = unsafe { std::fs::File::from_raw_fd(*fd) };
                     read_first_line(file)
                 }
                 #[cfg(target_os = "windows")]
